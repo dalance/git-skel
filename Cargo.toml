@@ -1,0 +1,27 @@
+[package]
+name = "git-skel"
+version = "0.1.0"
+authors = ["dalance@gmail.com"]
+repository = "https://github.com/dalance/git-skel"
+keywords = ["git"]
+categories = ["command-line-utilities"]
+license = "MIT"
+readme = "README.md"
+description = ""
+edition = "2018"
+
+[dependencies]
+failure       = "0.1.5"
+git2          = "0.8.0"
+serde         = "1.0.33"
+serde_derive  = "1.0.33"
+structopt     = "0.2.14"
+tempfile      = "3.0.7"
+toml          = "0.4.5"
+
+[package.metadata.release]
+dev-version-ext            = "pre"
+pre-release-commit-message = "Prepare to v{{version}}"
+pro-release-commit-message = "Start next development iteration v{{version}}"
+tag-message                = "Bump version to {{version}}"
+tag-prefix                 = "v"
