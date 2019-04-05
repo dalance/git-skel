@@ -1,11 +1,12 @@
+use crate::config::Config;
 use failure::{bail, Error};
 use git2::{BranchType, Delta, ObjectType, Oid, Repository};
-use serde_derive::{Deserialize, Serialize};
-use std::fs;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use structopt::{clap, StructOpt};
 use tempfile::TempDir;
+
+mod config;
+mod file;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Opt
@@ -25,6 +26,8 @@ pub enum Opt {
         url: String,
         #[structopt(short = "b", long = "branch")]
         branch: Option<String>,
+        #[structopt(short = "t", long = "tag")]
+        tag: Option<String>,
         #[structopt(short = "f", long = "force")]
         force: bool,
     },
@@ -42,130 +45,162 @@ pub enum Opt {
     Branch {
         #[structopt(name = "BRANCH")]
         branch: String,
+        #[structopt(short = "f", long = "force")]
+        force: bool,
     },
-    #[structopt(name = "branch", about = "Sets tracking tag")]
+    #[structopt(name = "tag", about = "Sets tracking tag")]
     #[structopt(raw(setting = "clap::AppSettings::ColoredHelp"))]
     Tag {
         #[structopt(name = "TAG")]
         tag: String,
+        #[structopt(short = "f", long = "force")]
+        force: bool,
+    },
+    #[structopt(name = "clean", about = "Removes skeleton files")]
+    #[structopt(raw(setting = "clap::AppSettings::ColoredHelp"))]
+    Clean {
+        #[structopt(short = "f", long = "force")]
+        force: bool,
     },
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Config
+// Subcommands
 // ---------------------------------------------------------------------------------------------------------------------
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Config {
-    pub url: String,
-    pub branch: Option<String>,
-    pub revision: String,
+fn cmd_init(url: &str, branch: Option<&str>, tag: Option<&str>, force: bool) -> Result<(), Error> {
+    let tgt = Repository::discover(".")?;
+    let (src, _dir) = setup_src(url, branch, tag)?;
+    let commit = src.head()?.peel_to_commit()?;
+    let config = Config::new(url, branch, tag, &commit);
+
+    init(&src, &tgt, force, true)?;
+    init(&src, &tgt, force, false)?;
+
+    config.save(&tgt, true)?;
+
+    Ok(())
+}
+
+fn cmd_update(force: bool) -> Result<(), Error> {
+    let tgt = Repository::discover(".")?;
+    let mut config = Config::load(&tgt)?;
+
+    let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())?;
+
+    update(&mut config, &src, &tgt, force, true)?;
+    update(&mut config, &src, &tgt, force, false)?;
+
+    let commit = src.head()?.peel_to_commit()?;
+    config.set_commit(&commit);
+
+    config.save(&tgt, false)?;
+
+    Ok(())
+}
+
+fn cmd_branch(branch: &str, force: bool) -> Result<(), Error> {
+    let tgt = Repository::discover(".")?;
+    let mut config = Config::load(&tgt)?;
+    config.set_branch(&branch);
+
+    let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())?;
+
+    update(&mut config, &src, &tgt, force, true)?;
+    update(&mut config, &src, &tgt, force, false)?;
+
+    let commit = src.head()?.peel_to_commit()?;
+    config.set_commit(&commit);
+
+    config.save(&tgt, false)?;
+
+    Ok(())
+}
+
+fn cmd_tag(tag: &str, force: bool) -> Result<(), Error> {
+    let tgt = Repository::discover(".")?;
+    let mut config = Config::load(&tgt)?;
+    config.set_tag(&tag);
+
+    let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())?;
+
+    update(&mut config, &src, &tgt, force, true)?;
+    update(&mut config, &src, &tgt, force, false)?;
+
+    let commit = src.head()?.peel_to_commit()?;
+    config.set_commit(&commit);
+
+    config.save(&tgt, false)?;
+
+    Ok(())
+}
+
+fn cmd_clean(force: bool) -> Result<(), Error> {
+    let tgt = Repository::discover(".")?;
+    let config = Config::load(&tgt)?;
+
+    let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())?;
+
+    clean(&src, &tgt, force, true)?;
+    clean(&src, &tgt, force, false)?;
+
+    Config::delete(&tgt)?;
+
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Functions
+// Support functions
 // ---------------------------------------------------------------------------------------------------------------------
 
-fn setup_src(url: &str, branch: Option<&str>) -> Result<(Repository, TempDir), Error> {
+fn setup_src<T: AsRef<str>>(
+    url: T,
+    branch: Option<T>,
+    tag: Option<T>,
+) -> Result<(Repository, TempDir), Error> {
     let dir = tempfile::tempdir()?;
-    let src = Repository::clone(url, &dir)?;
+    let src = Repository::clone(url.as_ref(), &dir)?;
 
     {
         let commit = if let Some(branch) = branch {
-            src.find_branch(&format!("origin/{}", branch), BranchType::Remote)?
+            src.find_branch(&format!("origin/{}", branch.as_ref()), BranchType::Remote)?
                 .get()
+                .peel_to_commit()?
+        } else if let Some(tag) = tag {
+            src.find_reference(&format!("refs/tags/{}", tag.as_ref()))?
                 .peel_to_commit()?
         } else {
             src.head()?.peel_to_commit()?
         };
 
         src.checkout_tree(commit.as_object(), None)?;
+        src.set_head_detached(commit.id())?;
     }
 
     Ok((src, dir))
 }
 
-fn init(url: &str, branch: Option<&str>) -> Result<(), Error> {
-    let tgt = Repository::discover(".")?;
-
-    let (src, _dir) = setup_src(url, branch)?;
-
-    let commit = src.head()?.peel_to_commit()?;
-
-    let config = Config {
-        url: String::from(url),
-        branch: branch.map(|x| String::from(x)),
-        revision: format!("{}", commit.id()),
-    };
-
-    init_files(&src, &tgt, true)?;
-    init_files(&src, &tgt, false)?;
-
-    set_config(&tgt, &config, true)?;
-
-    Ok(())
-}
-
-fn init_files(src: &Repository, tgt: &Repository, dry_run: bool) -> Result<(), Error> {
-    let src_root = PathBuf::from(src.workdir().unwrap());
-    let tgt_root = PathBuf::from(tgt.workdir().unwrap());
-
-    if dry_run {
-        println!("Following files will be created");
-    }
-
-    let mut exists = false;
+fn init(src: &Repository, tgt: &Repository, force: bool, dry_run: bool) -> Result<(), Error> {
+    let mut warn = false;
     for index in src.index()?.iter() {
         let path = PathBuf::from(&String::from_utf8(index.path)?);
-        let src_path = src_root.join(&path);
-        let tgt_path = tgt_root.join(&path);
-
-        if dry_run {
-            if tgt_path.exists() {
-                println!("  ! {}", path.to_string_lossy());
-                exists = true;
-            } else {
-                println!("  - {}", path.to_string_lossy());
-            }
-        } else {
-            if let Some(parent) = tgt_path.parent() {
-                if !parent.exists() {
-                    fs::create_dir_all(&parent)?;
-                }
-            }
-            fs::copy(src_path, tgt_path)?;
-        }
+        warn |= file::copy(src, tgt, &path, dry_run)?;
     }
 
-    if exists {
+    if warn && !force {
         bail!("Abort: some files ( marked by ! ) exist");
     }
 
     Ok(())
 }
 
-fn update() -> Result<(), Error> {
-    let tgt = Repository::discover(".")?;
-    let mut config = get_config(&tgt)?;
-
-    let (src, _dir) = setup_src(&config.url, config.branch.as_ref().map(String::as_ref))?;
-
-    update_files(&mut config, &src, &tgt, true)?;
-
-    set_config(&tgt, &config, false)?;
-
-    Ok(())
-}
-
-fn update_files(
+fn update(
     config: &mut Config,
     src: &Repository,
     tgt: &Repository,
+    force: bool,
     dry_run: bool,
 ) -> Result<(), Error> {
-    let src_root = PathBuf::from(src.workdir().unwrap());
-    let tgt_root = PathBuf::from(tgt.workdir().unwrap());
-
     let src_obj = src.head()?.peel(ObjectType::Any)?;
     let tgt_obj = src.find_object(Oid::from_str(&config.revision)?, None)?;
 
@@ -174,65 +209,52 @@ fn update_files(
 
     let diff = src.diff_tree_to_tree(Some(&tgt_tree), Some(&src_tree), None)?;
 
+    let mut warn = false;
     for d in diff.deltas() {
         let mut copy = None;
         let mut delete = None;
 
+        dbg!(d.status());
         match d.status() {
             Delta::Added => {
                 copy = Some(d.new_file().path().unwrap());
             }
-            Delta::Deleted => {}
+            Delta::Deleted => {
+                delete = Some(d.new_file().path().unwrap());
+            }
             Delta::Modified => {
                 copy = Some(d.new_file().path().unwrap());
             }
-            Delta::Renamed => {}
-            Delta::Copied => {}
-            Delta::Typechange => {}
-            _ => (),
+            _ => {
+                unimplemented!();
+            }
         }
 
-        if dry_run {
-            if let Some(copy) = copy {
-                let status = tgt.status_file(copy);
-                dbg!(status);
-            }
-            if let Some(delete) = delete {
-                let status = tgt.status_file(delete);
-                dbg!(status);
-            }
-        } else {
+        if let Some(copy) = copy {
+            warn |= file::copy(src, tgt, copy, dry_run)?;
         }
+        if let Some(delete) = delete {
+            dbg!(delete);
+            warn |= file::delete(tgt, delete, dry_run)?;
+        }
+    }
 
-        dbg!(d.nfiles());
-        dbg!(d.status());
-        dbg!(d.old_file().path());
-        dbg!(d.new_file().path());
+    if warn && !force {
+        bail!("Abort: some files ( marked by ! ) are not committed");
     }
 
     Ok(())
 }
 
-fn get_config(tgt: &Repository) -> Result<Config, Error> {
-    let tgt_root = PathBuf::from(tgt.workdir().unwrap());
-    let config_path = tgt_root.join(".gitskel.toml");
+fn clean(src: &Repository, tgt: &Repository, force: bool, dry_run: bool) -> Result<(), Error> {
+    let mut warn = false;
+    for index in src.index()?.iter() {
+        let path = PathBuf::from(&String::from_utf8(index.path)?);
+        warn |= file::delete(tgt, &path, dry_run)?;
+    }
 
-    let mut f = fs::File::open(&config_path)?;
-    let mut s = String::new();
-    let _ = f.read_to_string(&mut s);
-    let config = toml::from_str(&s)?;
-
-    Ok(config)
-}
-
-fn set_config(tgt: &Repository, config: &Config, check: bool) -> Result<(), Error> {
-    let tgt_root = PathBuf::from(tgt.workdir().unwrap());
-    let config_path = tgt_root.join(".gitskel.toml");
-
-    if check && config_path.exists() {
-        bail!("config exists: {:?}", config_path);
-    } else {
-        fs::write(config_path, toml::to_string(config)?)?;
+    if warn && !force {
+        bail!("Abort: some files ( marked by ! ) are not committed");
     }
 
     Ok(())
@@ -254,37 +276,22 @@ fn run() -> Result<(), Error> {
     let opt = Opt::from_args();
 
     match opt {
-        Opt::Init { url, branch, force } => init(&url, branch.as_ref().map(String::as_ref))?,
-        Opt::Update { force } => update()?,
-        Opt::Branch { branch } => (),
-        Opt::Tag { tag } => (),
+        Opt::Init {
+            url,
+            branch,
+            tag,
+            force,
+        } => cmd_init(
+            &url,
+            branch.as_ref().map(String::as_ref),
+            tag.as_ref().map(String::as_ref),
+            force,
+        )?,
+        Opt::Update { force } => cmd_update(force)?,
+        Opt::Branch { branch, force } => cmd_branch(&branch, force)?,
+        Opt::Tag { tag, force } => cmd_tag(&tag, force)?,
+        Opt::Clean { force } => cmd_clean(force)?,
     }
-
-    //let dir = tempfile::tempdir()?;
-    //let dir = dbg!(dir);
-
-    //let url = "../git-skel-test";
-    //let src = Repository::clone(url, &dir)?;
-
-    //let tgt = Repository::discover(".")?;
-
-    //let head = src.revparse_single("HEAD")?;
-    //let prev = src.revparse_single("HEAD^")?;
-    //dbg!(head.id());
-    //dbg!(prev.id());
-    //let head_tree = head.peel_to_tree()?;
-    //let prev_tree = prev.peel_to_tree()?;
-    //let diff = src.diff_tree_to_tree(Some(&head_tree), Some(&prev_tree), None)?;
-
-    //for d in diff.deltas() {
-    //    //dbg!(d.nfiles());
-    //    dbg!(d.status());
-    //    //dbg!(d.old_file().path());
-    //    //dbg!(d.new_file().path());
-    //}
-
-    ////init("../git-skel-test", None)?;
-    //init("../git-skel-test", Some("b1"))?;
 
     Ok(())
 }
