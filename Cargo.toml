@@ -7,7 +7,7 @@ keywords = ["git"]
 categories = ["command-line-utilities"]
 license = "MIT"
 readme = "README.md"
-description = ""
+description = "a git subcommand to apply skeleton repository continuously"
 edition = "2018"
 
 [dependencies]
