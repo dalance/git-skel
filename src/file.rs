@@ -25,7 +25,7 @@ pub fn copy(
     let mut warn = false;
     if is_diff(&src_path, &tgt_path)? {
         if dry_run {
-            let status = tgt.status_file(&tgt_path);
+            let status = tgt.status_file(&path);
             let indicator = if ignored {
                 " ignore"
             } else if let Ok(status) = status {
@@ -112,7 +112,7 @@ pub fn delete(
 
     let mut warn = false;
     if dry_run {
-        let status = tgt.status_file(&tgt_path);
+        let status = tgt.status_file(&path);
         let indicator = if ignored {
             " ignore"
         } else if let Ok(status) = status {
