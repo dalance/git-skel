@@ -3,7 +3,6 @@ use git2::Repository;
 use ignore::gitignore::Gitignore;
 use std::fs;
 use std::io::Read;
-use std::os::unix;
 use std::path::{Path, PathBuf};
 
 pub fn copy(
@@ -54,7 +53,7 @@ pub fn copy(
                 }
                 if fs::symlink_metadata(&src_path)?.file_type().is_symlink() {
                     let link_path = fs::read_link(&src_path)?;
-                    unix::fs::symlink(&link_path, &tgt_path)?;
+                    symlink(&link_path, &tgt_path)?;
                 } else {
                     fs::copy(&src_path, &tgt_path)?;
                 }
@@ -63,6 +62,20 @@ pub fn copy(
     }
 
     Ok(warn)
+}
+
+#[cfg(target_os = "windows")]
+fn symlink(src: &Path, dst: &Path) -> Result<(), Error> {
+    if src.is_file() {
+        Ok(std::os::windows::fs::symlink_file(&src, &dst)?)
+    } else {
+        Ok(std::os::windows::fs::symlink_dir(&src, &dst)?)
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn symlink(src: &Path, dst: &Path) -> Result<(), Error> {
+    Ok(std::os::unix::fs::symlink(&src, &dst)?)
 }
 
 fn is_diff(src_path: &Path, tgt_path: &Path) -> Result<bool, Error> {
