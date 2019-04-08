@@ -12,8 +12,7 @@ resources:
           image: xd009642/tarpaulin:latest-nightly
           options: --security-opt seccomp=unconfined
         - container: musl
-          image: ekidd/rust-musl-builder
-          options: --security-opt seccomp=unconfined
+          image: dalance/rust-musl-builder
 
 jobs:
     - job: Linux
