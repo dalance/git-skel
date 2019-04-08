@@ -17,6 +17,8 @@ Both of them are not easy.
 
 ## Platform
 
+Linux/macOS/Windows
+
 ## Installation
 
 ### Download binary
@@ -33,3 +35,72 @@ cargo install git-skel
 
 ## Usage
 
+### Init
+
+Initially you can setup to apply a skeleton repository in any git repository like below:
+
+```
+$ git skel init [URL]
+```
+
+`git skel init` command clones `[URL]` to a temporary directory and copies all files to the current repository.
+The command puts `.gitskel.toml` to the current repository to record the path and revision of the skeleton repository.
+You can check the added files by `git status` and commit if there is no problem.
+
+### Update
+
+If the skeleton repository is updated, you can apply the update like below:
+
+```
+$ git skel update
+```
+
+`git skel update` command clones `[URL]` to a temporary directory and copies all files to the current repository.
+If there are deleted files between the latest revision and the saved revision in `.gitskel.toml`, the files will be deleted.
+If the files which are changed by the command are modified and not committed, the command will be aborted.
+
+```
+$ git skel update
+Detect changes
+  !copy  : aaa
+Error: aborted bacause some files are not committed ( marked by ! )
+       If you will ignore it, use `--force` option.
+```
+
+You can ignore this check by `git skel update --force`.
+
+### Branch / Tag
+
+`git skel branch` command change the branch to track and update.
+
+```
+$ git skel branch [BRANCK NAME]
+```
+
+`git skel tag` command change the tag to track and update.
+
+```
+$ git skel tag [TAG NAME]
+```
+
+`--force` option can be used as the same as update.
+
+### Clean
+
+`git skel clean` command delete `.gitskel.toml` and all files which copied from the skeleton repository.
+
+```
+$ git skel clean
+```
+
+`--force` option can be used as the same as update.
+
+### `.gitskelignore`
+
+You can put `.gitskelignore` to repository root.
+This has the same syntax as `.gitignore`.
+Any file matched with `.gitskelignore` is ignored by the command.
+
+`.gitskelignore` can be used at both skeleton repository and project repository.
+For example, `README.md` should be added to `.gitskelignore` of a skeleton repository because `README.md` shoud not be copied to a project repository.
+If there are the files modified by project-specific reason, the files should be added to `.gitskelignore` of a project repository.
