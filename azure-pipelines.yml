@@ -13,6 +13,7 @@ resources:
           options: --security-opt seccomp=unconfined
         - container: musl
           image: ekidd/rust-musl-builder
+          options: --security-opt seccomp=unconfined
 
 jobs:
     - job: Linux
