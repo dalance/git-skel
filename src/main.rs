@@ -375,6 +375,8 @@ fn clean(
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
+    openssl_probe::init_ssl_cert_env_vars();
+
     let err = Term::stderr();
 
     if let Err(x) = run() {
