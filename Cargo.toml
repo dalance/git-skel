@@ -11,8 +11,10 @@ description = "a git subcommand to apply skeleton repository continuously"
 edition = "2018"
 
 [dependencies]
+console       = "0.7.5"
 failure       = "0.1.5"
 git2          = "0.8.0"
+ignore        = "0.4.6"
 serde         = "1.0.33"
 serde_derive  = "1.0.33"
 structopt     = "0.2.14"

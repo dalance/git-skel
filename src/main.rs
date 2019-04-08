@@ -1,7 +1,9 @@
 use crate::config::Config;
 use crate::error::ErrorKind;
+use console::Term;
 use failure::{bail, Error, ResultExt};
 use git2::{BranchType, Delta, ObjectType, Oid, Repository};
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use std::path::PathBuf;
 use structopt::{clap, StructOpt};
 use tempfile::TempDir;
@@ -80,8 +82,13 @@ fn cmd_init(url: &str, branch: Option<&str>, tag: Option<&str>, force: bool) -> 
     let commit = src.head()?.peel_to_commit()?;
     let config = Config::new(url, branch, tag, &commit);
 
-    init(&src, &tgt, force, true)?;
-    init(&src, &tgt, force, false)?;
+    let src_ignore = get_ignore(&src)?;
+    let tgt_ignore = get_ignore(&tgt)?;
+
+    println!("Detect changes");
+    init(&src, &tgt, &src_ignore, &tgt_ignore, force, true)?;
+    println!("Apply changes");
+    init(&src, &tgt, &src_ignore, &tgt_ignore, force, false)?;
 
     config.save(&tgt)?;
 
@@ -95,8 +102,29 @@ fn cmd_update(force: bool) -> Result<(), Error> {
     let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
         .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
-    update(&mut config, &src, &tgt, force, true)?;
-    update(&mut config, &src, &tgt, force, false)?;
+    let src_ignore = get_ignore(&src)?;
+    let tgt_ignore = get_ignore(&tgt)?;
+
+    println!("Detect changes");
+    update(
+        &mut config,
+        &src,
+        &tgt,
+        &src_ignore,
+        &tgt_ignore,
+        force,
+        true,
+    )?;
+    println!("Apply changes");
+    update(
+        &mut config,
+        &src,
+        &tgt,
+        &src_ignore,
+        &tgt_ignore,
+        force,
+        false,
+    )?;
 
     let commit = src.head()?.peel_to_commit()?;
     config.set_commit(&commit);
@@ -114,8 +142,29 @@ fn cmd_branch(branch: &str, force: bool) -> Result<(), Error> {
     let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
         .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
-    update(&mut config, &src, &tgt, force, true)?;
-    update(&mut config, &src, &tgt, force, false)?;
+    let src_ignore = get_ignore(&src)?;
+    let tgt_ignore = get_ignore(&tgt)?;
+
+    println!("Detect changes");
+    update(
+        &mut config,
+        &src,
+        &tgt,
+        &src_ignore,
+        &tgt_ignore,
+        force,
+        true,
+    )?;
+    println!("Apply changes");
+    update(
+        &mut config,
+        &src,
+        &tgt,
+        &src_ignore,
+        &tgt_ignore,
+        force,
+        false,
+    )?;
 
     let commit = src.head()?.peel_to_commit()?;
     config.set_commit(&commit);
@@ -133,8 +182,29 @@ fn cmd_tag(tag: &str, force: bool) -> Result<(), Error> {
     let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
         .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
-    update(&mut config, &src, &tgt, force, true)?;
-    update(&mut config, &src, &tgt, force, false)?;
+    let src_ignore = get_ignore(&src)?;
+    let tgt_ignore = get_ignore(&tgt)?;
+
+    println!("Detect changes");
+    update(
+        &mut config,
+        &src,
+        &tgt,
+        &src_ignore,
+        &tgt_ignore,
+        force,
+        true,
+    )?;
+    println!("Apply changes");
+    update(
+        &mut config,
+        &src,
+        &tgt,
+        &src_ignore,
+        &tgt_ignore,
+        force,
+        false,
+    )?;
 
     let commit = src.head()?.peel_to_commit()?;
     config.set_commit(&commit);
@@ -151,8 +221,12 @@ fn cmd_clean(force: bool) -> Result<(), Error> {
     let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
         .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
-    clean(&src, &tgt, force, true)?;
-    clean(&src, &tgt, force, false)?;
+    let tgt_ignore = get_ignore(&tgt)?;
+
+    println!("Detect changes");
+    clean(&src, &tgt, &tgt_ignore, force, true)?;
+    println!("Apply changes");
+    clean(&src, &tgt, &tgt_ignore, force, false)?;
 
     Config::delete(&tgt)?;
 
@@ -192,11 +266,27 @@ fn setup_src<T: AsRef<str>>(
     Ok((src, dir))
 }
 
-fn init(src: &Repository, tgt: &Repository, force: bool, dry_run: bool) -> Result<(), Error> {
+fn get_ignore(repo: &Repository) -> Result<Gitignore, Error> {
+    let root = PathBuf::from(repo.workdir().unwrap());
+    let path = root.join(".gitskelignore");
+    let mut builder = GitignoreBuilder::new(root);
+    builder.add(path);
+    builder.add_line(None, ".gitskelignore")?;
+    Ok(builder.build()?)
+}
+
+fn init(
+    src: &Repository,
+    tgt: &Repository,
+    src_ignore: &Gitignore,
+    tgt_ignore: &Gitignore,
+    force: bool,
+    dry_run: bool,
+) -> Result<(), Error> {
     let mut warn = false;
     for index in src.index()?.iter() {
         let path = PathBuf::from(&String::from_utf8(index.path)?);
-        warn |= file::copy(src, tgt, &path, dry_run)?;
+        warn |= file::copy(src, tgt, src_ignore, tgt_ignore, &path, dry_run)?;
     }
 
     if warn && !force {
@@ -210,6 +300,8 @@ fn update(
     config: &mut Config,
     src: &Repository,
     tgt: &Repository,
+    src_ignore: &Gitignore,
+    tgt_ignore: &Gitignore,
     force: bool,
     dry_run: bool,
 ) -> Result<(), Error> {
@@ -227,30 +319,27 @@ fn update(
 
     let mut warn = false;
     for d in diff.deltas() {
-        let mut copy = None;
         let mut delete = None;
 
         match d.status() {
-            Delta::Added => {
-                copy = Some(d.new_file().path().unwrap());
-            }
+            Delta::Added => (),
             Delta::Deleted => {
                 delete = Some(d.new_file().path().unwrap());
             }
-            Delta::Modified => {
-                copy = Some(d.new_file().path().unwrap());
-            }
+            Delta::Modified => (),
             _ => {
                 unimplemented!();
             }
         }
 
-        if let Some(copy) = copy {
-            warn |= file::copy(src, tgt, copy, dry_run)?;
-        }
         if let Some(delete) = delete {
-            warn |= file::delete(tgt, delete, dry_run)?;
+            warn |= file::delete(tgt, tgt_ignore, delete, dry_run)?;
         }
+    }
+
+    for index in src.index()?.iter() {
+        let path = PathBuf::from(&String::from_utf8(index.path)?);
+        warn |= file::copy(src, tgt, src_ignore, tgt_ignore, &path, dry_run)?;
     }
 
     if warn && !force {
@@ -260,11 +349,17 @@ fn update(
     Ok(())
 }
 
-fn clean(src: &Repository, tgt: &Repository, force: bool, dry_run: bool) -> Result<(), Error> {
+fn clean(
+    src: &Repository,
+    tgt: &Repository,
+    tgt_ignore: &Gitignore,
+    force: bool,
+    dry_run: bool,
+) -> Result<(), Error> {
     let mut warn = false;
     for index in src.index()?.iter() {
         let path = PathBuf::from(&String::from_utf8(index.path)?);
-        warn |= file::delete(tgt, &path, dry_run)?;
+        warn |= file::delete(tgt, tgt_ignore, &path, dry_run)?;
     }
 
     if warn && !force {
@@ -280,12 +375,22 @@ fn clean(src: &Repository, tgt: &Repository, force: bool, dry_run: bool) -> Resu
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
+    let err = Term::stderr();
+
     if let Err(x) = run() {
         let mut cause = x.iter_chain();
-        eprintln!("Error: {}", cause.next().unwrap());
+        let _ = err.write_line(&format!(
+            "{} {}",
+            console::style("Error:").red().bold(),
+            cause.next().unwrap()
+        ));
 
         for x in cause {
-            eprintln!("  Caused by: {}", x);
+            let _ = err.write_line(&format!(
+                "  {} {}",
+                console::style("Caused by:").white().bold(),
+                x
+            ));
         }
         std::process::exit(1);
     }
