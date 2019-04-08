@@ -10,9 +10,11 @@
 
 Skeleton repository is a project templete including trivial directories, scripts, configs, and so on.
 (You can find many skeleton repositories by searching `skeleton` in GitHub.)
+
 Usually skeleton repository is used at the initial phase of project by cloning the repository.
 If the skeleton repository is updated after the project is grown, the way to apply the update is carefully file copy or `git cherry-pick`.
 Both of them are not easy.
+
 **git-skel** provides the easy way to apply the update.
 
 ## Platform
@@ -55,9 +57,9 @@ If the skeleton repository is updated, you can apply the update like below:
 $ git skel update
 ```
 
-`git skel update` command clones `[URL]` to a temporary directory and copies all files to the current repository.
+`git skel update` command clones the skeleton repository saved in `.gitskel.toml` to a temporary directory and copies all files to the current repository.
 If there are deleted files between the latest revision and the saved revision in `.gitskel.toml`, the files will be deleted.
-If the files which are changed by the command are modified and not committed, the command will be aborted.
+If the files which will be changed by the command are modified and not committed, the command will be aborted.
 
 ```
 $ git skel update
