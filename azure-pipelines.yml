@@ -19,7 +19,7 @@ jobs:
       steps:
           - script: |
               chmod 777 .
-              docker run --rm -v '$(pwd)':/home/rust/src ekidd/rust-musl-builder cargo build --release --target=x86_64-unknown-linux-musl
+              docker run --rm -v "$(pwd)":/home/rust/src ekidd/rust-musl-builder cargo build --release --target=x86_64-unknown-linux-musl
 
     - job: Linux
       pool:
