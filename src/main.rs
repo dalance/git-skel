@@ -380,8 +380,9 @@ fn main() {
     openssl_probe::init_ssl_cert_env_vars();
 
     let err = Term::stderr();
+    let opt = Opt::from_args();
 
-    if let Err(x) = run() {
+    if let Err(x) = run(opt) {
         let mut cause = x.iter_chain();
         let _ = err.write_line(&format!(
             "{} {}",
@@ -400,9 +401,7 @@ fn main() {
     }
 }
 
-fn run() -> Result<(), Error> {
-    let opt = Opt::from_args();
-
+fn run(opt: Opt) -> Result<(), Error> {
     match opt {
         Opt::Init {
             url,
@@ -422,4 +421,99 @@ fn run() -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn init() {
+        let args = vec![
+            "git-skel",
+            "init",
+            "https://github.com/dalance/git-skel-test.git",
+        ];
+        let opt = Opt::from_iter(args.iter());
+        let ret = run(opt);
+        assert!(ret.is_ok());
+    }
+
+    fn init_fail() {
+        let args = vec![
+            "git-skel",
+            "init",
+            "https://github.com/dalance/git-skel-test.git",
+        ];
+        let opt = Opt::from_iter(args.iter());
+        let ret = run(opt);
+        assert!(ret.is_err());
+    }
+
+    fn update() {
+        let args = vec!["git-skel", "update", "--force"];
+        let opt = Opt::from_iter(args.iter());
+        let ret = run(opt);
+        assert!(ret.is_ok());
+    }
+
+    fn branch() {
+        let args = vec!["git-skel", "branch", "b1", "--force"];
+        let opt = Opt::from_iter(args.iter());
+        let ret = run(opt);
+        assert!(ret.is_ok());
+    }
+
+    fn branch_fail() {
+        let args = vec!["git-skel", "branch", "b1"];
+        let opt = Opt::from_iter(args.iter());
+        let ret = run(opt);
+        assert!(ret.is_err());
+    }
+
+    fn tag() {
+        let args = vec!["git-skel", "tag", "t1", "--force"];
+        let opt = Opt::from_iter(args.iter());
+        let ret = run(opt);
+        assert!(ret.is_ok());
+    }
+
+    fn tag_fail() {
+        let args = vec!["git-skel", "tag", "t1"];
+        let opt = Opt::from_iter(args.iter());
+        let ret = run(opt);
+        assert!(ret.is_err());
+    }
+
+    fn clean() {
+        let args = vec!["git-skel", "clean", "--force"];
+        let opt = Opt::from_iter(args.iter());
+        let ret = run(opt);
+        assert!(ret.is_ok());
+    }
+
+    #[test]
+    fn test_sequence() {
+        // normal
+        init();
+        update();
+        branch();
+        tag();
+        clean();
+
+        // init fail
+        init();
+        init_fail();
+        clean();
+
+        // branch fail
+        init();
+        branch_fail();
+        clean();
+
+        // tag fail
+        init();
+        tag_fail();
+        clean();
+    }
+
 }
