@@ -1,6 +1,8 @@
 # Change Log
 
-## [Unreleased](https://github.com/dalance/git-skel/compare/v0.1.0...Unreleased) - ReleaseDate
+## [Unreleased](https://github.com/dalance/procs/compare/v0.1.1...Unreleased) - ReleaseDate
+
+## [v0.1.1](https://github.com/dalance/git-skel/compare/v0.1.0...v0.1.1) - 2019-04-09
 
 ## [v0.1.0](https://github.com/dalance/git-skel/compare/...v0.1.0) - 2019-04-08
 
