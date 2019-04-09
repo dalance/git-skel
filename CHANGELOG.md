@@ -1,6 +1,8 @@
 # Change Log
 
-## [Unreleased](https://github.com/dalance/procs/compare/v0.1.2...Unreleased) - ReleaseDate
+## [Unreleased](https://github.com/dalance/procs/compare/v0.1.3...Unreleased) - ReleaseDate
+
+## [v0.1.3](https://github.com/dalance/procs/compare/v0.1.2...v0.1.3) - 2019-04-09
 
 * [Fixed] symlink is failed to delete
 * [Fixed] .gitskelignore in src repo is ignored at delete
