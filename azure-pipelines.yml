@@ -13,14 +13,6 @@ resources:
           options: --security-opt seccomp=unconfined
 
 jobs:
-    - job: musl
-      pool:
-          vmImage: 'ubuntu-16.04'
-      steps:
-          - script: |
-              chmod 777 .
-              docker run --rm -v "$(pwd)":/home/rust/src ekidd/rust-musl-builder cargo build --release --target=x86_64-unknown-linux-musl
-
     - job: Linux
       pool:
           vmImage: 'ubuntu-16.04'
