@@ -35,28 +35,24 @@ pub fn copy(
                     warn = true;
                     "!copy  "
                 }
+            } else if path_exists(&tgt_path) {
+                warn = true;
+                "!copy  "
             } else {
-                if tgt_path.exists() {
-                    warn = true;
-                    "!copy  "
-                } else {
-                    " copy  "
-                }
+                " copy  "
             };
             println!("  {}: {}", indicator, path.to_string_lossy());
-        } else {
-            if !ignored {
-                if let Some(parent) = tgt_path.parent() {
-                    if !parent.exists() {
-                        fs::create_dir_all(&parent)?;
-                    }
+        } else if !ignored {
+            if let Some(parent) = tgt_path.parent() {
+                if !parent.exists() {
+                    fs::create_dir_all(&parent)?;
                 }
-                if fs::symlink_metadata(&src_path)?.file_type().is_symlink() {
-                    let link_path = fs::read_link(&src_path)?;
-                    symlink(&link_path, &tgt_path)?;
-                } else {
-                    fs::copy(&src_path, &tgt_path)?;
-                }
+            }
+            if fs::symlink_metadata(&src_path)?.file_type().is_symlink() {
+                let link_path = fs::read_link(&src_path)?;
+                symlink(&link_path, &tgt_path)?;
+            } else {
+                fs::copy(&src_path, &tgt_path)?;
             }
         }
     }
@@ -67,15 +63,17 @@ pub fn copy(
 #[cfg(target_os = "windows")]
 fn symlink(src: &Path, dst: &Path) -> Result<(), Error> {
     if src.is_file() {
-        Ok(std::os::windows::fs::symlink_file(&src, &dst)?)
+        std::os::windows::fs::symlink_file(&src, &dst)?;
     } else {
-        Ok(std::os::windows::fs::symlink_dir(&src, &dst)?)
+        std::os::windows::fs::symlink_dir(&src, &dst)?;
     }
+    Ok(())
 }
 
 #[cfg(not(target_os = "windows"))]
 fn symlink(src: &Path, dst: &Path) -> Result<(), Error> {
-    Ok(std::os::unix::fs::symlink(&src, &dst)?)
+    std::os::unix::fs::symlink(&src, &dst)?;
+    Ok(())
 }
 
 fn is_diff(src_path: &Path, tgt_path: &Path) -> Result<bool, Error> {
@@ -122,22 +120,30 @@ pub fn delete(
                 warn = true;
                 "!delete"
             }
+        } else if path_exists(&tgt_path) {
+            warn = true;
+            "!delete"
         } else {
-            if tgt_path.exists() {
-                warn = true;
-                "!delete"
-            } else {
-                "missing"
-            }
+            "missing"
         };
         println!("  {}: {}", indicator, path.to_string_lossy());
-    } else {
-        if !ignored && tgt_path.exists() {
-            remove_recursive(&tgt_path)?;
-        }
+    } else if !ignored && path_exists(&tgt_path) {
+        remove_recursive(&tgt_path)?;
     }
 
     Ok(warn)
+}
+
+fn path_exists(path: &Path) -> bool {
+    if let Ok(metadata) = path.symlink_metadata() {
+        if metadata.file_type().is_symlink() {
+            true
+        } else {
+            path.exists()
+        }
+    } else {
+        path.exists()
+    }
 }
 
 fn remove_recursive(path: &Path) -> Result<(), Error> {
