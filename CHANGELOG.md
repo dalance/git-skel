@@ -3,6 +3,7 @@
 ## [Unreleased](https://github.com/dalance/procs/compare/v0.1.2...Unreleased) - ReleaseDate
 
 * [Fixed] symlink is failed to delete
+* [Fixed] .gitskelignore in src repo is ignored at delete
 
 ## [v0.1.2](https://github.com/dalance/procs/compare/v0.1.1...v0.1.2) - 2019-04-09
 

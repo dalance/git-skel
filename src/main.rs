@@ -221,12 +221,13 @@ fn cmd_clean(force: bool) -> Result<(), Error> {
     let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
         .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
+    let src_ignore = get_ignore(&src)?;
     let tgt_ignore = get_ignore(&tgt)?;
 
     println!("Detect changes");
-    clean(&src, &tgt, &tgt_ignore, force, true)?;
+    clean(&src, &tgt, &src_ignore, &tgt_ignore, force, true)?;
     println!("Apply changes");
-    clean(&src, &tgt, &tgt_ignore, force, false)?;
+    clean(&src, &tgt, &src_ignore, &tgt_ignore, force, false)?;
 
     Config::delete(&tgt)?;
 
@@ -333,7 +334,7 @@ fn update(
         }
 
         if let Some(delete) = delete {
-            warn |= file::delete(tgt, tgt_ignore, delete, dry_run)?;
+            warn |= file::delete(tgt, src_ignore, tgt_ignore, delete, dry_run)?;
         }
     }
 
@@ -352,6 +353,7 @@ fn update(
 fn clean(
     src: &Repository,
     tgt: &Repository,
+    src_ignore: &Gitignore,
     tgt_ignore: &Gitignore,
     force: bool,
     dry_run: bool,
@@ -359,7 +361,7 @@ fn clean(
     let mut warn = false;
     for index in src.index()?.iter() {
         let path = PathBuf::from(&String::from_utf8(index.path)?);
-        warn |= file::delete(tgt, tgt_ignore, &path, dry_run)?;
+        warn |= file::delete(tgt, src_ignore, tgt_ignore, &path, dry_run)?;
     }
 
     if warn && !force {

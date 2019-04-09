@@ -100,13 +100,17 @@ fn is_ignore(ignore: &Gitignore, path: &Path) -> bool {
 
 pub fn delete(
     tgt: &Repository,
+    src_ignore: &Gitignore,
     tgt_ignore: &Gitignore,
     path: &Path,
     dry_run: bool,
 ) -> Result<bool, Error> {
     let tgt_root = PathBuf::from(tgt.workdir().unwrap());
     let tgt_path = tgt_root.join(&path);
-    let ignored = is_ignore(tgt_ignore, path);
+
+    let src_ignored = is_ignore(src_ignore, path);
+    let tgt_ignored = is_ignore(tgt_ignore, path);
+    let ignored = src_ignored || tgt_ignored;
 
     let mut warn = false;
     if dry_run {
