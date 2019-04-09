@@ -24,7 +24,8 @@ jobs:
               id
               ls
               pwd
-              sudo -u rust cargo test
+              usermod -u 1001 -o rust
+              cargo test
             displayName: Run test
 
           - script: |
