@@ -21,6 +21,7 @@ jobs:
       container: musl
       steps:
           - script: |
+              su rust
               id
               ls
               pwd
