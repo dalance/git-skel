@@ -12,7 +12,7 @@ resources:
           image: xd009642/tarpaulin:latest-nightly
           options: --security-opt seccomp=unconfined
         - container: musl
-          image: dalance/rust-musl-builder
+          image: dalance/rust-musl-builder:latest
 
 jobs:
     - job: Linux
@@ -21,7 +21,7 @@ jobs:
       container: musl
       steps:
           - script: |
-              cargo build
+              cargo test
             displayName: Run test
 
           - script: |
