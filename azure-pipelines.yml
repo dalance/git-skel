@@ -21,11 +21,10 @@ jobs:
       container: musl
       steps:
           - script: |
-              su rust
               id
               ls
               pwd
-              cargo test
+              sudo -u rust cargo test
             displayName: Run test
 
           - script: |
