@@ -11,24 +11,23 @@ resources:
         - container: tarpaulin
           image: xd009642/tarpaulin:latest-nightly
           options: --security-opt seccomp=unconfined
-        - container: musl
-          image: dalance/rust-musl-builder:latest
 
 jobs:
     - job: Linux
       pool:
           vmImage: 'ubuntu-16.04'
-      container: musl
       steps:
           - script: |
-              id
-              ls
-              pwd
-              usermod -u 1001 -o rust
+              curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
+              echo '##vso[task.setvariable variable=PATH]$(PATH):$(HOME)/.cargo/bin'
+            displayName: Install rustup
+
+          - script: |
               cargo test
             displayName: Run test
 
           - script: |
+              chmod 777 ./target
               make release_lnx
               cp *.zip $(Build.ArtifactStagingDirectory)
             displayName: Build release binary
