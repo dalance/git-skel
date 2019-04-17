@@ -35,6 +35,10 @@ You can install by [cargo](https://crates.io).
 cargo install git-skel
 ```
 
+## Demo
+
+[![asciicast](https://asciinema.org/a/241330.svg)](https://asciinema.org/a/241330)
+
 ## Usage
 
 ### Init
