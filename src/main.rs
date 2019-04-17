@@ -78,7 +78,7 @@ fn cmd_init(url: &str, branch: Option<&str>, tag: Option<&str>, force: bool) -> 
     Config::check(&tgt)?;
 
     let (src, _dir) =
-        setup_src(url, branch, tag).context(ErrorKind::RepoClone(String::from(url)))?;
+        setup_src(url, None, branch, tag).context(ErrorKind::RepoClone(String::from(url)))?;
     let commit = src.head()?.peel_to_commit()?;
     let config = Config::new(url, branch, tag, &commit);
 
@@ -99,8 +99,13 @@ fn cmd_update(force: bool) -> Result<(), Error> {
     let tgt = Repository::discover(".").context(ErrorKind::RepoDiscover)?;
     let mut config = Config::load(&tgt)?;
 
-    let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
-        .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
+    let (src, _dir) = setup_src(
+        &config.url,
+        None,
+        config.branch.as_ref(),
+        config.tag.as_ref(),
+    )
+    .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
     let src_ignore = get_ignore(&src)?;
     let tgt_ignore = get_ignore(&tgt)?;
@@ -139,8 +144,13 @@ fn cmd_branch(branch: &str, force: bool) -> Result<(), Error> {
     let mut config = Config::load(&tgt)?;
     config.set_branch(&branch);
 
-    let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
-        .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
+    let (src, _dir) = setup_src(
+        &config.url,
+        None,
+        config.branch.as_ref(),
+        config.tag.as_ref(),
+    )
+    .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
     let src_ignore = get_ignore(&src)?;
     let tgt_ignore = get_ignore(&tgt)?;
@@ -179,8 +189,13 @@ fn cmd_tag(tag: &str, force: bool) -> Result<(), Error> {
     let mut config = Config::load(&tgt)?;
     config.set_tag(&tag);
 
-    let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
-        .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
+    let (src, _dir) = setup_src(
+        &config.url,
+        None,
+        config.branch.as_ref(),
+        config.tag.as_ref(),
+    )
+    .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
     let src_ignore = get_ignore(&src)?;
     let tgt_ignore = get_ignore(&tgt)?;
@@ -218,7 +233,7 @@ fn cmd_clean(force: bool) -> Result<(), Error> {
     let tgt = Repository::discover(".")?;
     let config = Config::load(&tgt)?;
 
-    let (src, _dir) = setup_src(&config.url, config.branch.as_ref(), config.tag.as_ref())
+    let (src, _dir) = setup_src(&config.url, Some(&config.revision), None, None)
         .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
 
     let src_ignore = get_ignore(&src)?;
@@ -240,6 +255,7 @@ fn cmd_clean(force: bool) -> Result<(), Error> {
 
 fn setup_src<T: AsRef<str>>(
     url: T,
+    revision: Option<T>,
     branch: Option<T>,
     tag: Option<T>,
 ) -> Result<(Repository, TempDir), Error> {
@@ -247,7 +263,11 @@ fn setup_src<T: AsRef<str>>(
     let src = Repository::clone(url.as_ref(), &dir)?;
 
     {
-        let commit = if let Some(branch) = branch {
+        let commit = if let Some(revision) = revision {
+            src.find_object(Oid::from_str(revision.as_ref())?, None)
+                .context(ErrorKind::RevisionNotFound(String::from(revision.as_ref())))?
+                .peel_to_commit()?
+        } else if let Some(branch) = branch {
             src.find_branch(&format!("origin/{}", branch.as_ref()), BranchType::Remote)
                 .context(ErrorKind::BranchNotFound(String::from(branch.as_ref())))?
                 .get()

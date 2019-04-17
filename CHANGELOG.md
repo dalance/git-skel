@@ -2,6 +2,8 @@
 
 ## [Unreleased](https://github.com/dalance/procs/compare/v0.1.3...Unreleased) - ReleaseDate
 
+* [Fixed] "git skel clean" references a wrong revision
+
 ## [v0.1.3](https://github.com/dalance/procs/compare/v0.1.2...v0.1.3) - 2019-04-09
 
 * [Fixed] symlink is failed to delete
