@@ -1,6 +1,8 @@
 # Change Log
 
-## [Unreleased](https://github.com/dalance/procs/compare/v0.1.3...Unreleased) - ReleaseDate
+## [Unreleased](https://github.com/dalance/procs/compare/v0.1.4...Unreleased) - ReleaseDate
+
+## [v0.1.4](https://github.com/dalance/procs/compare/v0.1.3...v0.1.4) - 2019-04-17
 
 * [Fixed] "git skel clean" references a wrong revision
 
