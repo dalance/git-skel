@@ -37,7 +37,7 @@ cargo install git-skel
 
 ## Demo
 
-[![asciicast](https://asciinema.org/a/241331.svg)](https://asciinema.org/a/241331)
+[![asciicast](https://asciinema.org/a/241332.svg)](https://asciinema.org/a/241332)
 
 ## Usage
 
