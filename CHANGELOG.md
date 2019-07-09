@@ -2,6 +2,8 @@
 
 ## [Unreleased](https://github.com/dalance/procs/compare/v0.1.5...Unreleased) - ReleaseDate
 
+* [Fixed] build failure on macOS
+
 ## [v0.1.5](https://github.com/dalance/procs/compare/v0.1.4...v0.1.5) - 2019-07-09
 
 * [Added] locally modified file check
