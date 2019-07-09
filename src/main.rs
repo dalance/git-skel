@@ -307,7 +307,7 @@ fn init(
     let mut warn = false;
     for index in src.index()?.iter() {
         let path = PathBuf::from(&String::from_utf8(index.path)?);
-        warn |= file::copy(src, tgt, src_ignore, tgt_ignore, &path, dry_run)?;
+        warn |= file::copy(src, tgt, src_ignore, tgt_ignore, &path, &vec![], dry_run)?;
     }
 
     if warn && !force {
@@ -339,15 +339,20 @@ fn update(
     let diff = src.diff_tree_to_tree(Some(&tgt_tree), Some(&src_tree), None)?;
 
     let mut warn = false;
+    let mut modified = Vec::new();
     for d in diff.deltas() {
         let mut delete = None;
 
         match d.status() {
-            Delta::Added => (),
+            Delta::Added => {
+                modified.push(d.new_file().path().unwrap());
+            }
             Delta::Deleted => {
                 delete = Some(d.new_file().path().unwrap());
             }
-            Delta::Modified => (),
+            Delta::Modified => {
+                modified.push(d.new_file().path().unwrap());
+            }
             _ => {
                 unimplemented!();
             }
@@ -360,7 +365,7 @@ fn update(
 
     for index in src.index()?.iter() {
         let path = PathBuf::from(&String::from_utf8(index.path)?);
-        warn |= file::copy(src, tgt, src_ignore, tgt_ignore, &path, dry_run)?;
+        warn |= file::copy(src, tgt, src_ignore, tgt_ignore, &path, &modified, dry_run)?;
     }
 
     if warn && !force {

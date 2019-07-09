@@ -17,7 +17,7 @@ pub enum ErrorKind {
     #[fail(display = "failed to save config: {}", 0)]
     ConfigSave(String),
     #[fail(
-        display = "aborted bacause some files are not committed ( marked by ! )\n       If you will ignore it, use `--force` option."
+        display = "aborted bacause\n         - some files are not committed    ( marked by ! )\n         - some files are modified locally ( marked by * )\n       If you will ignore it, use `--force` option."
     )]
     AbortByModified,
     #[fail(

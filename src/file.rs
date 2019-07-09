@@ -11,6 +11,7 @@ pub fn copy(
     src_ignore: &Gitignore,
     tgt_ignore: &Gitignore,
     path: &Path,
+    modified: &Vec<&Path>,
     dry_run: bool,
 ) -> Result<bool, Error> {
     let src_root = PathBuf::from(src.workdir().unwrap());
@@ -30,7 +31,12 @@ pub fn copy(
                 " ignore"
             } else if let Ok(status) = status {
                 if status.is_empty() {
-                    " copy  "
+                    if !modified.contains(&path) {
+                        warn = true;
+                        "*copy  "
+                    } else {
+                        " copy  "
+                    }
                 } else {
                     warn = true;
                     "!copy  "
