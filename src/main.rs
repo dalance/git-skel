@@ -150,7 +150,7 @@ fn cmd_branch(branch: &str, force: bool) -> Result<(), Error> {
         config.branch.as_ref(),
         config.tag.as_ref(),
     )
-    .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
+    .context(ErrorKind::RepoClone(config.url.clone()))?;
 
     let src_ignore = get_ignore(&src)?;
     let tgt_ignore = get_ignore(&tgt)?;
@@ -195,7 +195,7 @@ fn cmd_tag(tag: &str, force: bool) -> Result<(), Error> {
         config.branch.as_ref(),
         config.tag.as_ref(),
     )
-    .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
+    .context(ErrorKind::RepoClone(config.url.clone()))?;
 
     let src_ignore = get_ignore(&src)?;
     let tgt_ignore = get_ignore(&tgt)?;
@@ -234,7 +234,7 @@ fn cmd_clean(force: bool) -> Result<(), Error> {
     let config = Config::load(&tgt)?;
 
     let (src, _dir) = setup_src(&config.url, Some(&config.revision), None, None)
-        .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
+        .context(ErrorKind::RepoClone(config.url.clone()))?;
 
     let src_ignore = get_ignore(&src)?;
     let tgt_ignore = get_ignore(&tgt)?;
