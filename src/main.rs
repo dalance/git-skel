@@ -105,7 +105,7 @@ fn cmd_update(force: bool) -> Result<(), Error> {
         config.branch.as_ref(),
         config.tag.as_ref(),
     )
-    .context(ErrorKind::RepoClone(String::from(config.url.as_ref())))?;
+    .context(ErrorKind::RepoClone(config.url.clone()))?;
 
     let src_ignore = get_ignore(&src)?;
     let tgt_ignore = get_ignore(&tgt)?;
