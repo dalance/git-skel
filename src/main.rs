@@ -329,9 +329,7 @@ fn update(
     let src_obj = src.head()?.peel(ObjectType::Any)?;
     let tgt_obj = src
         .find_object(Oid::from_str(&config.revision)?, None)
-        .context(ErrorKind::RevisionNotFound(String::from(
-            config.revision.as_ref(),
-        )))?;
+        .context(ErrorKind::RevisionNotFound(config.revision.clone()))?;
 
     let src_tree = src_obj.peel_to_tree()?;
     let tgt_tree = tgt_obj.peel_to_tree()?;
