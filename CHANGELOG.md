@@ -1,6 +1,8 @@
 # Change Log
 
-## [Unreleased](https://github.com/dalance/procs/compare/v0.1.5...Unreleased) - ReleaseDate
+## [Unreleased](https://github.com/dalance/procs/compare/v0.1.6...Unreleased) - ReleaseDate
+
+## [v0.1.6](https://github.com/dalance/procs/compare/v0.1.5...v0.1.6) - 2019-07-09
 
 * [Fixed] build failure on macOS
 
