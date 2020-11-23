@@ -19,7 +19,7 @@ openssl-probe = "0.1.2"
 serde         = "1.0.117"
 serde_derive  = "1.0.117"
 structopt     = "0.2.14"
-tempfile      = "3.0.7"
+tempfile      = "3.1.0"
 toml          = "0.4.5"
 
 [package.metadata.release]
