@@ -17,14 +17,12 @@ mod file;
 // ---------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, StructOpt)]
-#[structopt(raw(
-    long_version = "option_env!(\"LONG_VERSION\").unwrap_or(env!(\"CARGO_PKG_VERSION\"))"
-))]
-#[structopt(raw(setting = "clap::AppSettings::ColoredHelp"))]
-#[structopt(raw(setting = "clap::AppSettings::DeriveDisplayOrder"))]
+#[structopt(long_version = option_env!("LONG_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")))]
+#[structopt(setting = clap::AppSettings::ColoredHelp)]
+#[structopt(setting = clap::AppSettings::DeriveDisplayOrder)]
 pub enum Opt {
     #[structopt(name = "init", about = "Initializes")]
-    #[structopt(raw(setting = "clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = clap::AppSettings::ColoredHelp)]
     Init {
         #[structopt(name = "URL")]
         url: String,
@@ -39,13 +37,13 @@ pub enum Opt {
         name = "update",
         about = "Updates to the latest revision of the upstream repository"
     )]
-    #[structopt(raw(setting = "clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = clap::AppSettings::ColoredHelp)]
     Update {
         #[structopt(short = "f", long = "force")]
         force: bool,
     },
     #[structopt(name = "branch", about = "Sets tracking branck")]
-    #[structopt(raw(setting = "clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = clap::AppSettings::ColoredHelp)]
     Branch {
         #[structopt(name = "BRANCH")]
         branch: String,
@@ -53,7 +51,7 @@ pub enum Opt {
         force: bool,
     },
     #[structopt(name = "tag", about = "Sets tracking tag")]
-    #[structopt(raw(setting = "clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = clap::AppSettings::ColoredHelp)]
     Tag {
         #[structopt(name = "TAG")]
         tag: String,
@@ -61,7 +59,7 @@ pub enum Opt {
         force: bool,
     },
     #[structopt(name = "clean", about = "Removes skeleton files")]
-    #[structopt(raw(setting = "clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = clap::AppSettings::ColoredHelp)]
     Clean {
         #[structopt(short = "f", long = "force")]
         force: bool,
