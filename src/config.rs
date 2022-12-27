@@ -1,7 +1,7 @@
 use crate::error::ErrorKind;
 use failure::{bail, Error, ResultExt};
 use git2::{Commit, Repository};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
