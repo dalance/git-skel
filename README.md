@@ -4,7 +4,6 @@
 
 [![Actions Status](https://github.com/dalance/git-skel/workflows/Regression/badge.svg)](https://github.com/dalance/git-skel/actions)
 [![Crates.io](https://img.shields.io/crates/v/git-skel.svg)](https://crates.io/crates/git-skel)
-[![codecov](https://codecov.io/gh/dalance/git-skel/branch/master/graph/badge.svg)](https://codecov.io/gh/dalance/git-skel)
 
 ## Description
 
