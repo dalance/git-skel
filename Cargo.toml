@@ -15,7 +15,7 @@ console       = "0.16"
 failure       = "0.1"
 git2          = "0.20"
 ignore        = "0.4"
-openssl-probe = "0.1"
+openssl-probe = "0.2"
 serde         = {version = "1.0", features = ["derive"]}
 structopt     = "0.3"
 tempfile      = "3"
